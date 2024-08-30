@@ -8,6 +8,7 @@ use crate::FelgensResult;
 pub struct HttpClient {
     client: Client,
     base_url: Url,
+    header: HeaderMap,
 }
 
 #[derive(Debug, Deserialize)]
@@ -37,24 +38,23 @@ pub struct RoomInitData {
 }
 
 impl HttpClient {
-    pub fn new() -> FelgensResult<Self> {
+    pub fn new(cookies: &str) -> FelgensResult<Self> {
+        let mut header = HeaderMap::new();
+        header.insert("cookie", cookies.parse().unwrap());
+
         Ok(Self {
             client: Client::new(),
             base_url: Url::parse("https://api.live.bilibili.com")?,
+            header,
         })
     }
 
-    async fn get(
-        &self,
-        path: &str,
-        query: Option<&[(&str, &str)]>,
-        headers: Option<HeaderMap>,
-    ) -> FelgensResult<Response> {
+    async fn get(&self, path: &str, query: Option<&[(&str, &str)]>) -> FelgensResult<Response> {
         let resp = self
             .client
             .get(self.base_url.join(path)?)
             .query(query.unwrap_or_default())
-            .headers(headers.unwrap_or_default())
+            .headers(self.header.clone())
             .timeout(Duration::from_secs(30))
             .send()
             .await?
@@ -67,7 +67,6 @@ impl HttpClient {
         let resp = self
             .get(
                 &format!("xlive/web-room/v1/index/getDanmuInfo?id={}&type=0", room_id),
-                None,
                 None,
             )
             .await?
@@ -85,7 +84,6 @@ impl HttpClient {
         let resp = self
             .get(
                 &format!("room/v1/Room/room_init?id={}?&from=room", room_id),
-                None,
                 None,
             )
             .await?

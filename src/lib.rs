@@ -59,14 +59,13 @@ pub type FelgensResult<T> = Result<T, FelgensError>;
 
 #[derive(Serialize)]
 struct WsSend {
-    // uid: u32,
+    uid: u32,
     roomid: u64,
     key: String,
-    // protover: u32,
-    // platform: String,
-    // clientver: String,
-    // #[serde(rename = "type")]
-    // t: u32,
+    protover: u32,
+    platform: String,
+    #[serde(rename = "type")]
+    t: u32,
 }
 
 /// Init Bilibili websocket channel
@@ -98,16 +97,20 @@ struct WsSend {
 /// ```
 pub async fn ws_socket_object(
     tx: mpsc::UnboundedSender<WsStreamMessageType>,
+    uid: u32,
     roomid: u64,
+    cookies: &str,
 ) -> FelgensResult<()> {
-    let (write, read) = prepare(roomid).await?;
-
+    let (write, read) = prepare(uid, roomid, cookies).await?;
     tokio::select!(v = send_heartbeat_packets(write) => v, v = recv(read, tx) => v)?;
 
     Ok(())
 }
 
-async fn recv(mut read: WsReadType, tx: mpsc::UnboundedSender<WsStreamMessageType>) -> FelgensResult<()> {
+async fn recv(
+    mut read: WsReadType,
+    tx: mpsc::UnboundedSender<WsStreamMessageType>,
+) -> FelgensResult<()> {
     while let Ok(Some(msg)) = read.try_next().await {
         let data = msg.into_data();
 
@@ -155,16 +158,21 @@ async fn recv_string(mut read: WsReadType, tx: mpsc::UnboundedSender<String>) ->
     Ok(())
 }
 
-pub async fn ws_socket_str(tx: mpsc::UnboundedSender<String>, roomid: u64) -> FelgensResult<()> {
-    let (write, read) = prepare(roomid).await?;
+pub async fn ws_socket_str(
+    tx: mpsc::UnboundedSender<String>,
+    uid: u32,
+    roomid: u64,
+    cookies: &str,
+) -> FelgensResult<()> {
+    let (write, read) = prepare(uid, roomid, cookies).await?;
 
     tokio::select!(v = send_heartbeat_packets(write) => v, v = recv_string(read, tx) => v)?;
 
     Ok(())
 }
 
-async fn prepare(roomid: u64) -> FelgensResult<(WsWriteType, WsReadType)> {
-    let client = HttpClient::new()?;
+async fn prepare(uid: u32, roomid: u64, cookies: &str) -> FelgensResult<(WsWriteType, WsReadType)> {
+    let client = HttpClient::new(cookies)?;
     let roomid = client.get_room_id(roomid).await?;
     let dammu_info = client.get_dammu_info(roomid).await?.data;
     let key = dammu_info.token;
@@ -177,7 +185,6 @@ async fn prepare(roomid: u64) -> FelgensResult<(WsWriteType, WsReadType)> {
         let host = format!("wss://{}/sub", i.host);
         if let Ok((c, _)) = connect_async(&host).await {
             con = Some(c);
-            info!("Connected ws host: {}", host);
             break;
         } else {
             warn!("Connect ws host: {} has error, trying next host ...", host);
@@ -186,9 +193,15 @@ async fn prepare(roomid: u64) -> FelgensResult<(WsWriteType, WsReadType)> {
 
     let con = con.ok_or_else(|| FelgensError::FailedConnectWsHost)?;
     let (mut write, read) = con.split();
-    let json = serde_json::to_string(&WsSend { roomid, key })?;
+    let json = serde_json::to_string(&WsSend {
+        roomid,
+        key,
+        uid,
+        protover: 3,
+        platform: "web".to_string(),
+        t: 2,
+    })?;
 
-    debug!("Websocket sending json: {}", json);
     let json = pack::encode(&json, 7);
     write.send(Message::binary(json)).await?;
 
@@ -197,9 +210,7 @@ async fn prepare(roomid: u64) -> FelgensResult<(WsWriteType, WsReadType)> {
 
 async fn send_heartbeat_packets(mut write: WsWriteType) -> FelgensResult<()> {
     loop {
-        write
-            .send(Message::binary(pack::encode("", 2)))
-            .await?;
+        write.send(Message::binary(pack::encode("", 2))).await?;
         debug!("Heartbeat packets have been sent!");
         sleep(Duration::from_secs(30)).await;
     }

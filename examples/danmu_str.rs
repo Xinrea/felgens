@@ -12,7 +12,7 @@ async fn main() {
         .and_then(|x| x.parse::<u64>().ok())
         .unwrap_or(22746343);
 
-    let ws = ws_socket_str(tx, room_id);
+    let ws = ws_socket_str(tx, 0, room_id, "");
 
     if let Err(e) = tokio::select! {v = ws => v, v = recv(rx) => v} {
         eprintln!("{}", e);
