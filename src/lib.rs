@@ -59,7 +59,7 @@ pub type FelgensResult<T> = Result<T, FelgensError>;
 
 #[derive(Serialize)]
 struct WsSend {
-    uid: u32,
+    uid: u64,
     roomid: u64,
     key: String,
     protover: u32,
@@ -97,7 +97,7 @@ struct WsSend {
 /// ```
 pub async fn ws_socket_object(
     tx: mpsc::UnboundedSender<WsStreamMessageType>,
-    uid: u32,
+    uid: u64,
     roomid: u64,
     cookies: &str,
 ) -> FelgensResult<()> {
@@ -160,7 +160,7 @@ async fn recv_string(mut read: WsReadType, tx: mpsc::UnboundedSender<String>) ->
 
 pub async fn ws_socket_str(
     tx: mpsc::UnboundedSender<String>,
-    uid: u32,
+    uid: u64,
     roomid: u64,
     cookies: &str,
 ) -> FelgensResult<()> {
@@ -171,7 +171,7 @@ pub async fn ws_socket_str(
     Ok(())
 }
 
-async fn prepare(uid: u32, roomid: u64, cookies: &str) -> FelgensResult<(WsWriteType, WsReadType)> {
+async fn prepare(uid: u64, roomid: u64, cookies: &str) -> FelgensResult<(WsWriteType, WsReadType)> {
     let client = HttpClient::new(cookies)?;
     let roomid = client.get_room_id(roomid).await?;
     let dammu_info = client.get_dammu_info(roomid).await?.data;
