@@ -9,7 +9,7 @@ pub use ws_type::{
     WsStreamMessageType,
 };
 
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 
 use crate::{http_client::HttpClient, pack::build_pack};
 use ws_type::WsStreamCtx;
@@ -124,7 +124,7 @@ async fn recv(
                         match ws.match_msg() {
                             Ok(v) => tx.send(v)?,
                             Err(e) => {
-                                warn!(
+                                debug!(
                                     "This message parsing is not yet supported:\nMessage: {i}\nErr: {e:#?}"
                                 );
                             }
