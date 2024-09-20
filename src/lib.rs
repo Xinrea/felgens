@@ -9,7 +9,7 @@ pub use ws_type::{
     WsStreamMessageType,
 };
 
-use log::{debug, error, warn};
+use log::{debug, error, trace, warn};
 
 use crate::{http_client::HttpClient, pack::build_pack};
 use ws_type::WsStreamCtx;
@@ -124,7 +124,7 @@ async fn recv(
                         match ws.match_msg() {
                             Ok(v) => tx.send(v)?,
                             Err(e) => {
-                                debug!(
+                                trace!(
                                     "This message parsing is not yet supported:\nMessage: {i}\nErr: {e:#?}"
                                 );
                             }
@@ -211,7 +211,7 @@ async fn prepare(uid: u64, roomid: u64, cookies: &str) -> FelgensResult<(WsWrite
 async fn send_heartbeat_packets(mut write: WsWriteType) -> FelgensResult<()> {
     loop {
         write.send(Message::binary(pack::encode("", 2))).await?;
-        debug!("Heartbeat packets have been sent!");
+        trace!("Heartbeat packets have been sent!");
         sleep(Duration::from_secs(30)).await;
     }
 }
