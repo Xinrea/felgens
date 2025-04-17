@@ -99,14 +99,16 @@ impl WsStreamCtx {
         let cmd = self.handle_cmd();
 
         let result = match cmd {
-            Some("DANMU_MSG") => WsStreamMessageType::DanmuMsg(DanmuMessage::new_from_ctx(self)?),
-            Some("SUPER_CHAT_MESSAGE") => {
+            Some(c) if c.contains("DANMU_MSG") => {
+                WsStreamMessageType::DanmuMsg(DanmuMessage::new_from_ctx(self)?)
+            }
+            Some(c) if c.contains("SUPER_CHAT_MESSAGE") => {
                 WsStreamMessageType::SuperChatMessage(SuperChatMessage::new_from_ctx(self)?)
             }
-            Some("INTERACT_WORD") => {
+            Some(c) if c.contains("INTERACT_WORD") => {
                 WsStreamMessageType::InteractWord(InteractWord::new_from_ctx(self)?)
             }
-            Some("SEND_GIFT") | Some("COMBO_SEND") => {
+            Some(c) if c.contains("SEND_GIFT") || c.contains("COMBO_SEND") => {
                 WsStreamMessageType::SendGift(SendGift::new_from_ctx(self)?)
             }
             _ => return Err(LiveMessageError::UnknownMessage(self.clone())),
