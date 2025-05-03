@@ -77,10 +77,6 @@ impl HttpClient {
     }
 
     pub async fn get_room_id(&self, room_id: u64) -> FelgensResult<u64> {
-        if room_id > 1000 {
-            return Ok(room_id);
-        }
-
         let resp = self
             .get(
                 &format!("room/v1/Room/room_init?id={}?&from=room", room_id),
