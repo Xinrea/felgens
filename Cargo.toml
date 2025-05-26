@@ -24,6 +24,9 @@ brotli = "3.3"
 log = "0.4"
 thiserror = "1.0"
 url = "2.3"
+regex = "1.11.1"
+md5 = "0.7.0"
+pct-str = "2.0.0"
 
 [dev-dependencies]
 owo-colors = "3.5"
