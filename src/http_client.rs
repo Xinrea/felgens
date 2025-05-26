@@ -70,8 +70,8 @@ impl HttpClient {
 
     pub async fn get_dammu_info(&self, room_id: u64) -> FelgensResult<DanmuInfo> {
         let parameters = serde_json::json!({
-            "id": room_id,
-            "type": 0,
+            "id": room_id.to_string(),
+            "type": "0",
         });
         let sign = self.get_sign(parameters).await?;
         let resp = self
