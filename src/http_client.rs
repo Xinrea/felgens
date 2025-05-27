@@ -72,6 +72,7 @@ impl HttpClient {
         let parameters = serde_json::json!({
             "id": room_id.to_string(),
             "type": "0",
+            "web_location": "444.8"
         });
         let sign = self.get_sign(parameters).await?;
         let resp = self
